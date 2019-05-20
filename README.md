@@ -3,7 +3,7 @@
 
 You probably don't want to use this, might not end well, your call
 
-# Purpose
+# Why
 
 I needed a way to isolate windows software with file/registry capturing in mind
 
@@ -16,7 +16,8 @@ that have their keys saved/loaded from external files.
 
 I found that windows (since vista) virtualizes registry calls from HKLM/Software to HKCU/Software
 
-Obviously any software that respects %USERPROFILE% can be redirected 
+Obviously any software that respects %USERPROFILE% can be redirected by changing this variable at runtime,
+but I needed a reliable way to handle absolute path calls based on the registry, and registry keys themselves.
 
 # Warnings
 
