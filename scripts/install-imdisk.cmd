@@ -1,0 +1,1 @@
+D:\Isolation\redist\ImDiskTk-x64.exe /silent /installfolder:"D:\Local\Software\ImDisk"

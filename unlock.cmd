@@ -1,0 +1,29 @@
+SETLOCAL
+SET WD=%~dp0
+IF %WD:~-1%==\ SET WD=%WD:~0,-1%
+
+
+
+:BEGIN
+SET MEM_PATH=%WD%\run\global
+FOR /F "delims=" %%A IN ('DIR /B %MEM_PATH%\sid\lock') DO (SET HIVE_CN=%%A)
+IF DEFINED HIVE_CN GOTO :CONTINUE
+EXIT
+
+:CONTINUE
+
+SET /P HIVE_SID=<%MEM_PATH%\sid\lock\%HIVE_CN%
+
+%WD%\bin\PsExec64.exe -accepteula -u %HIVE_CN% -p game CMD /C EXIT
+
+
+REG QUERY HKU\%HIVE_SID% 1>NUL 2>NUL||GOTO :UNLOCK
+ECHO FAIL
+PAUSE
+EXIT
+
+
+:UNLOCK
+MOVE %MEM_PATH%\sid\lock\%HIVE_CN% %MEM_PATH%\sid\free
+PAUSE
+EXIT

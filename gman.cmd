@@ -1,0 +1,111 @@
+SETLOCAL
+SET WD=%~dp0
+SET SID_STATUS=free
+IF %WD:~-1%==\ SET WD=%WD:~0,-1%
+
+:SET_PARAM_DEFAULT
+SET u=root
+SET r=0
+SET s=0
+SET l=game
+SET d=0
+
+:CHECK_PARAM
+IF "%1"=="" GOTO SET_PARAM
+REM ECHO              %1
+SET AUX=%1
+IF "%AUX:~0,1%"=="-" (
+   SET N=%AUX:~1,250%
+) ELSE (
+   SET "%N%=%1"
+   SET N=
+)
+SHIFT
+GOTO CHECK_PARAM
+
+:SET_PARAM
+IF NOT DEFINED P GOTO ERROR_NO_PROFILE_PARAM
+SET USERNAME=%U%
+SET REGISTRY=%R%
+SET SECURITY=%S%
+SET PROFILE=%P%
+SET PROFILE=%PROFILE:"=%
+SET LINK=%L%
+:: UNUSED
+SET DELETE_KEYS_ON_EXIT=%D%
+
+
+:CHECK_MEMDISK
+DIR /B %WD%\run 1>NUL 2>NUL||(SET JMP=GET_MEM_PATH&&GOTO HELPER_MOUNT_RAMDISK)
+
+
+:GET_MEM_PATH
+IF %SECURITY%==2 SET MEM_PATH=%WD%\run\user\%USERNAME%&&GOTO GET_HIVE_CN_FREE
+IF %SECURITY%==1 SET MEM_PATH=%WD%\run\global&&GOTO GET_HIVE_CN_FREE
+IF %SECURITY%==0 SET MEM_PATH=%WD%\run\global&&GOTO GET_HIVE_CN_SPIN
+
+:GET_HIVE_CN_FREE
+FOR /F "delims=" %%A IN ('DIR /B %MEM_PATH%\sid\free') DO (SET HIVE_CN=%%A&&IF DEFINED HIVE_CN GOTO GET_HIVE_SID)
+PAUSE
+EXIT
+
+:GET_HIVE_CN_SPIN
+FOR /F "delims=" %%A IN ('DIR /B %MEM_PATH%\sid\free') DO (SET HIVE_CN=%%A&&IF DEFINED HIVE_CN GOTO GET_HIVE_SID)
+FOR /F "delims=" %%A IN ('DIR /B %MEM_PATH%\sid\lock') DO (SET HIVE_CN=%%A&&(SET SID_STATUS=lock&&IF DEFINED HIVE_CN GOTO GET_HIVE_SID))
+PAUSE&&EXIT
+
+:GET_HIVE_SID
+SET /P HIVE_SID=<%MEM_PATH%\sid\%SID_STATUS%\%HIVE_CN%
+IF %SID_STATUS%==free SET SID_STATUS==lock&&MOVE %MEM_PATH%\sid\free\%HIVE_CN% %MEM_PATH%\sid\lock
+
+:LOAD_HIVE
+IF %REGISTRY%==0 GOTO EXECUTE
+IF NOT EXIST %MEM_PATH%\hive\%HIVE_SID% MKDIR %MEM_PATH%\hive\%HIVE_SID%
+COPY %WD%\config\skeleton\hive %MEM_PATH%\hive\%HIVE_SID%
+IF NOT EXIST %MEM_PATH%\sid\active\%HIVE_SID% MKDIR %MEM_PATH%\sid\active\%HIVE_SID% 
+ECHO NUL>"%MEM_PATH%\sid\active\%HIVE_SID%\%USERNAME%-%PROFILE%"
+REG LOAD HKU\%HIVE_SID% "%MEM_PATH%\hive\%HIVE_SID%\root.hive"
+
+:EXECUTE
+IF %REGISTRY% GEQ 1 powershell -ExecutionPolicy Bypass -File %WD%\scripts\reg-load-keys.ps1 "INTENTION" %SAVE_KEYS% %HIVE_SID% "%WD%" %USERNAME% "%PROFILE%" powershell -ExecutionPolicy Bypass -File %WD%\scripts\reg-load-keys.ps1 "INTENTION" %HIVE_SID% %WD% %USERNAME% "%PROFILE%"
+%WD%\bin\PsExec64.exe -accepteula -u %HIVE_CN% -p game CMD /C %WD%\load.cmd INTENTION %WD% %USERNAME% "%PROFILE%" %LINK%
+IF %REGISTRY%==2 powershell -ExecutionPolicy Bypass -File %WD%\scripts\reg-dump-keys.ps1 "INTENTION" %SAVE_KEYS% %HIVE_SID% "%WD%" %USERNAME% "%PROFILE%"
+
+:UNLOAD_HIVE
+REG UNLOAD HKU\%HIVE_SID%
+REG QUERY HKU\%HIVE_SID% 1>NUL 2>NUL||GOTO :CLEANUP
+PAUSE
+EXIT
+
+:CLEANUP
+IF %REGISTRY% GEQ 1 GOTO UNLOCK
+EXIT
+
+:UNLOCK
+MOVE %MEM_PATH%\sid\lock\%HIVE_CN% %MEM_PATH%\sid\free
+DEL "%MEM_PATH%\sid\active\%HIVE_SID%\%USERNAME%-%PROFILE%"
+RMDIR /S %MEM_PATH%\hive\%HIVE_SID%
+EXIT
+
+
+::----------------
+:: Assist Methods
+::----------------
+
+:HELPER_MOUNT_RAMDISK
+CALL %WD%\scripts\init-sidpool-ramdisk.cmd
+GOTO %JMP%
+
+
+::----------------
+:: Error & Debug
+::----------------
+
+:ERROR_NO_PROFILE_PARAM
+ECHO No Profile Selected!
+ECHO.
+ECHO Please select profile with -p "Profile Name"
+ECHO.
+ECHO.
+PAUSE
+EXIT

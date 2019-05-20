@@ -1,0 +1,1 @@
+bin\PsExec64.exe -accepteula -u Isolation -p game CMD
