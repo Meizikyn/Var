@@ -1,4 +1,4 @@
-# Windows Environment Isolation Controller (EIC)
+# Windows Environment Isolation Controller
 ## Formerly GMAN
 
 # Why
