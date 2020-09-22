@@ -27,7 +27,7 @@ I've published this for backup purposes more-so than to share it, as I have negl
 
 Be warned, this is in a state of "works-for-me", and will not likely see user-friendly updates in the near-future without the interest of other users, and the nature of this being an "exploit" over and application make it unlikely I will make this more user-friendly to novice users.
 
-I can not in good conscience recommend this tool without warning that this requires the opening of many security wholes in the OS, as it is intended to exist in offline workstations.
+I can not in good conscience recommend this tool without warning that this requires the opening of many security holes in the OS, as it is intended to exist in offline workstations.
 
 # Documentation
 
